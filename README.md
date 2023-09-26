@@ -1,2 +1,2 @@
-# backend_lab1
-Customizing the project template
+# back-end
+Server software technologies
