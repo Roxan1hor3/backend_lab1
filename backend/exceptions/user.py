@@ -1,0 +1,2 @@
+class UserExistError(Exception):
+    pass

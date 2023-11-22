@@ -1,34 +1,48 @@
 import uuid
 from typing import Any
 
-from flask import request
+from flask import request, jsonify
+from pydantic import TypeAdapter
+from sqlalchemy.exc import IntegrityError
+from backend.models.category import Category
 
-from backend import app
-
-categories = {
-    "360a4a67a4c849a3a63b855863423b81": {"name": "category_0"},
-    "8e580084e1b64b00a338845d38b23b82": {"name": "category_1"},
-    "f7bd727277af4fd8a3eca952114ac9b3": {"name": "category_2"},
-    "d909383903af4ebfb7865458411eae24": {"name": "category_3"},
-    "e24c49e9d9b644eca8c75e5c8540b455": {"name": "category_4"},
-    "1b9d847e7300460b8c59a9453a546a66": {"name": "category_5"},
-}
+from backend import app, db
+from backend.exceptions.category import CategoryExistError
+from backend.schemas.category import GetCategorySchema, CreateCategorySchema
 
 
 @app.route("/category/", methods=["GET"])
-def get_categories() -> dict[str, Any]:
-    return categories
+def get_categories(offset: int = 0, limit: int = 10) -> dict[str, Any]:
+    count = db.session.query(Category).count()
+    results = TypeAdapter(list[GetCategorySchema]).validate_python(
+        db.session.execute(
+            db.select(Category).order_by(Category.name).limit(limit).offset(offset)
+        ).scalars()
+    )
+    return {"count": count, "results": [item.model_dump() for item in results]}
 
 
 @app.route("/category/", methods=["POST"])
 def create_category():
     category_data = request.get_json()
-    category_uuid = uuid.uuid4().hex
-    category = {category_uuid: category_data}
-    categories[category_uuid] = category_data
-    return category
+    category = CreateCategorySchema(**category_data)
+    try:
+        new_category = Category(name=category.name, description=category.description)
+        db.session.add(new_category)
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        raise CategoryExistError("Category already exists") from e
+    return category.model_dump()
 
 
-@app.route("/category/<uuid>/", methods=["DELETE"])
-def delete_category(uuid: str) -> dict[str, Any]:
-    return categories.pop(uuid)
+@app.route("/category/<_id>/", methods=["DELETE"])
+def delete_category(_id: int) -> dict[str, Any]:
+    category_to_delete = Category.query.get(_id)
+
+    if category_to_delete:
+        db.session.delete(category_to_delete)
+        db.session.commit()
+        return jsonify({"message": f"Category {_id} deleted successfully"})
+    else:
+        return jsonify({"message": f"Category {_id} not found"}), 404
