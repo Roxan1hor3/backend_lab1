@@ -2,6 +2,7 @@ from sqlite3 import IntegrityError
 from typing import Any
 
 from flask import request
+from flask_jwt_extended import jwt_required
 from pydantic import TypeAdapter
 
 from backend import app, db
@@ -11,6 +12,7 @@ from backend.schemas.currency import GetCurrencySchema, CreateCurrencySchema
 
 
 @app.route("/currencies/", methods=["GET"])
+@jwt_required()
 def get_currencies(offset: int = 0, limit: int = 10) -> dict[str, Any]:
     count = db.session.query(Currency).count()
     results = TypeAdapter(list[GetCurrencySchema]).validate_python(
@@ -22,6 +24,7 @@ def get_currencies(offset: int = 0, limit: int = 10) -> dict[str, Any]:
 
 
 @app.route("/currency/", methods=["POST"])
+@jwt_required()
 def create_user():
     currency_data = request.get_json()
     currency = CreateCurrencySchema(**currency_data)

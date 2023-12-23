@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from flask import request, jsonify
+from flask_jwt_extended import jwt_required
 from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from backend.models.category import Category
@@ -12,6 +13,7 @@ from backend.schemas.category import GetCategorySchema, CreateCategorySchema
 
 
 @app.route("/category/", methods=["GET"])
+@jwt_required()
 def get_categories(offset: int = 0, limit: int = 10) -> dict[str, Any]:
     count = db.session.query(Category).count()
     results = TypeAdapter(list[GetCategorySchema]).validate_python(
@@ -23,6 +25,7 @@ def get_categories(offset: int = 0, limit: int = 10) -> dict[str, Any]:
 
 
 @app.route("/category/", methods=["POST"])
+@jwt_required()
 def create_category():
     category_data = request.get_json()
     category = CreateCategorySchema(**category_data)
@@ -37,6 +40,7 @@ def create_category():
 
 
 @app.route("/category/<_id>/", methods=["DELETE"])
+@jwt_required()
 def delete_category(_id: int) -> dict[str, Any]:
     category_to_delete = Category.query.get(_id)
 

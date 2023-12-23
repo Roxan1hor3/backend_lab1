@@ -8,6 +8,10 @@ services:
       dockerfile: Dockerfile
     environment:
       PORT: 5000
+      FLASK_APP: __init__.py
+      JWT_SECRET_KEY: 147087166616428235147066706932956095674
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://habrpguser:pgpwd4habr@172.22.0.2:5432/habrdb
+
     ports:
       - "5000:8080"
   db:

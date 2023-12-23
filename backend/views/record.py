@@ -1,6 +1,7 @@
 from typing import Any
 
 from flask import request, jsonify, Response
+from flask_jwt_extended import jwt_required
 from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 
@@ -11,6 +12,7 @@ from backend.schemas.record import GetRecordSchema, CreateRecordSchema
 
 
 @app.route("/record/<_id>/", methods=["GET"])
+@jwt_required()
 def get_records(_id) -> dict[str, Any]:
     record = db.get_or_404(Record, _id)
     return GetRecordSchema(
@@ -25,6 +27,7 @@ def get_records(_id) -> dict[str, Any]:
 
 
 @app.route("/record/<_id>/", methods=["DELETE"])
+@jwt_required()
 def delete_record(_id: int) -> Response | tuple[Response, int]:
     record_to_delete = Record.query.get(_id)
 
@@ -37,6 +40,7 @@ def delete_record(_id: int) -> Response | tuple[Response, int]:
 
 
 @app.route("/record/", methods=["POST"])
+@jwt_required()
 def create_record():
     record_data = request.get_json()
     record = CreateRecordSchema(**record_data)
@@ -58,6 +62,7 @@ def create_record():
 
 
 @app.route("/record_filter/<category_id>/<user_id>/", methods=["GET"])
+@jwt_required()
 def get_records_by_filter(
     category_id=None, user_id=None, offset: int = 0, limit: int = 10
 ) -> dict[str, str] | list[str]:
